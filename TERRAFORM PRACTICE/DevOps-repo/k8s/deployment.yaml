@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: releaseops-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: releaseops-app }
+  template:
+    metadata:
+      labels: { app: releaseops-app }
+    spec:
+      containers:
+        - name: app
+          image: <ecr-repo-uri>:${IMAGE_TAG}
+          ports: [{ containerPort: 5000 }]
+          env: [{ name: APP_ENV, value: "${ENVIRONMENT}" }]
+          readinessProbe: { httpGet: { path: /health, port: 5000 }, initialDelaySeconds: 5 }
+          resources:
+            requests: { cpu: "50m", memory: "64Mi" }
+            limits:   { cpu: "200m", memory: "128Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: releaseops-app-svc
+spec:
+  type: NodePort
+  selector: { app: releaseops-app }
+  ports: [{ port: 80, targetPort: 5000, nodePort: 30080 }]
